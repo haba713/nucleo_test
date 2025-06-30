@@ -35,10 +35,10 @@ A minimal Rust project for the STM32F446ZE Nucleo board using `probe-rs` and
 
 ## Project Files
 
-- [src/main.rs]: Main firmware source
-- [memory.x]: Memory layout for STM32F446ZE (512K Flash, 128K RAM)
-- [build.rs]: Ensures `memory.x` is linked during build
-- [.cargo/config.toml]: Sets the target and probe-rs runner
+- [main.rs](src/main.rs): Main firmware source
+- [memory.x](memory.x): Memory layout for STM32F446ZE (512K Flash, 128K RAM)
+- [build.rs](build.rs): Ensures `memory.x` is linked during build
+- [config.toml](.cargo/config.toml): Sets the target and probe-rs runner
 
 ## Notes
 
