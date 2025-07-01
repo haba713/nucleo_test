@@ -7,8 +7,9 @@ build = "build.rs"
 [dependencies]
 cortex-m = "0.7"
 cortex-m-rt = "0.7"
-panic-halt = "0.2"
-stm32f4xx-hal = { version = "0.14", features = ["stm32f446"] }
+embedded-hal = "1.0.0"
+panic-halt = "1.0"
+stm32f4xx-hal = { version = "0.22", features = ["stm32f446"] }
 
 [profile.release]
 opt-level = "z"
