@@ -7,14 +7,8 @@ use stm32f4xx_hal::{
     pac,
     prelude::*,
 };
+use embedded_hal::digital::OutputPin;
 use cortex_m::delay::Delay;
-
-#[derive(Clone, Copy)]
-enum LedId {
-    Led1,
-    Led2,
-    Led3,
-}
 
 #[entry]
 fn main() -> ! {
@@ -24,32 +18,35 @@ fn main() -> ! {
     let clocks = rcc.cfgr.sysclk(16.MHz()).freeze();
     let gpiob = dp.GPIOB.split();
 
-    let mut led1 = gpiob.pb0.into_push_pull_output();
-    let mut led2 = gpiob.pb7.into_push_pull_output();
-    let mut led3 = gpiob.pb14.into_push_pull_output();
-
-    led1.set_low();
-    led2.set_low();
-    led3.set_low();
-
-    let sequence = [LedId::Led1, LedId::Led2, LedId::Led3, LedId::Led2];
+    let leds: [&mut dyn OutputPin<Error = core::convert::Infallible>; 3] = [
+        &mut gpiob.pb0.into_push_pull_output(),
+        &mut gpiob.pb7.into_push_pull_output(),
+        &mut gpiob.pb14.into_push_pull_output(),
+    ];
 
     let mut delay = Delay::new(cp.SYST, clocks.hclk().raw());
     let mut index = 0;
+    let mut direction = 1; // 1 for forward, -1 for backward
+
+    // initialize with first led on
+    leds[0].set_high().unwrap();
 
     loop {
-        led1.set_low();
-        led2.set_low();
-        led3.set_low();
+        // turn off current led
+        leds[index as usize].set_low().unwrap();
 
-        match sequence[index] {
-            LedId::Led1 => led1.set_high(),
-            LedId::Led2 => led2.set_high(),
-            LedId::Led3 => led3.set_high(),
+        // update index for next led
+        index = (index as i8 + direction) as usize;
+
+        // reverse direction at the ends
+        if index == leds.len() - 1 || index == 0 {
+            direction = -direction;
         }
 
-        delay.delay_ms(200_u32);
+        // turn on next led
+        leds[index as usize].set_high().unwrap();
 
-        index = (index + 1) % sequence.len();
+        // wait 200ms before next step
+        delay.delay_ms(200_u32);
     }
 }
