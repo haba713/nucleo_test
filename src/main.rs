@@ -1,55 +1,58 @@
 #![no_std]
 #![no_main]
 
-use panic_halt as _;
-use cortex_m_rt::entry;
-use stm32f4xx_hal::{
-    pac,
-    prelude::*,
-};
 use cortex_m::delay::Delay;
-
-#[derive(Clone, Copy)]
-enum LedId {
-    Led1,
-    Led2,
-    Led3,
-}
+use cortex_m_rt::entry;
+use embedded_hal::digital::OutputPin;
+use panic_halt as _;
+use stm32f4xx_hal::{pac, prelude::*};
 
 #[entry]
 fn main() -> ! {
-    let dp = pac::Peripherals::take().unwrap();
-    let cp = cortex_m::Peripherals::take().unwrap();
-    let rcc = dp.RCC.constrain();
-    let clocks = rcc.cfgr.sysclk(16.MHz()).freeze();
-    let gpiob = dp.GPIOB.split();
+    // initialize device peripherals
+    let device_peripherals = pac::Peripherals::take().unwrap();
+    // initialize core peripherals
+    let core_peripherals = cortex_m::Peripherals::take().unwrap();
+    // configure reset and clock control
+    let clock_control = device_peripherals.RCC.constrain();
+    // set system clock to 16 MHz and freeze configuration
+    let clock_config = clock_control.cfgr.sysclk(16.MHz()).freeze();
+    // split gpiob for led control
+    let gpio_bank_b = device_peripherals.GPIOB.split();
 
-    let mut led1 = gpiob.pb0.into_push_pull_output();
-    let mut led2 = gpiob.pb7.into_push_pull_output();
-    let mut led3 = gpiob.pb14.into_push_pull_output();
+    // configure led pins as push-pull outputs
+    let led_array: [&mut dyn OutputPin<Error = core::convert::Infallible>; 3] = [
+        &mut gpio_bank_b.pb0.into_push_pull_output(),
+        &mut gpio_bank_b.pb7.into_push_pull_output(),
+        &mut gpio_bank_b.pb14.into_push_pull_output(),
+    ];
 
-    led1.set_low();
-    led2.set_low();
-    led3.set_low();
+    // create delay object using system timer and clock frequency
+    let mut delay_timer = Delay::new(core_peripherals.SYST, clock_config.hclk().raw());
+    // track current led index
+    let mut current_led_index = 0;
+    // set direction: 1 for forward, -1 for backward
+    let mut direction = 1;
 
-    let sequence = [LedId::Led1, LedId::Led2, LedId::Led3, LedId::Led2];
-
-    let mut delay = Delay::new(cp.SYST, clocks.hclk().raw());
-    let mut index = 0;
+    // initialize with first led on
+    led_array[0].set_high().unwrap();
 
     loop {
-        led1.set_low();
-        led2.set_low();
-        led3.set_low();
+        // turn off current led
+        led_array[current_led_index as usize].set_low().unwrap();
 
-        match sequence[index] {
-            LedId::Led1 => led1.set_high(),
-            LedId::Led2 => led2.set_high(),
-            LedId::Led3 => led3.set_high(),
+        // update index for next led
+        current_led_index = (current_led_index as i8 + direction) as usize;
+
+        // reverse direction at array boundaries
+        if current_led_index == led_array.len() - 1 || current_led_index == 0 {
+            direction = -direction;
         }
 
-        delay.delay_ms(200_u32);
+        // turn on next led
+        led_array[current_led_index as usize].set_high().unwrap();
 
-        index = (index + 1) % sequence.len();
+        // wait 200ms before next step
+        delay_timer.delay_ms(200_u32);
     }
 }
