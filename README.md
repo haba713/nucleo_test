@@ -1,6 +1,6 @@
 # Nucleo F446ZE Test
 
-A minimal Rust project for the Nucleo F446ZE board with the STM32F446ZE
+A minimal Rust STM32 project for the Nucleo F446ZE board with the STM32F446ZE
 microcontroller using `probe-rs` and `stm32f4xx-hal`. The application
 sequentially lights three user LEDs (L01 green on PB0, L02 blue on PB7, L03 red
 on PB14) with a 200 ms delay per step in the order L01, L02, L03, L02, L01, and
